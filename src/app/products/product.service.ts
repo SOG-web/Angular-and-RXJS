@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 
-import { Observable, throwError, combineLatest } from 'rxjs';
+import { Observable, throwError, combineLatest, BehaviorSubject } from 'rxjs';
 import { catchError, tap, map } from 'rxjs/operators';
 
 import { Product } from './product';
@@ -45,6 +45,37 @@ export class ProductService {
       )
     )
   );
+
+  /*
+  START
+  This was done in the service since it is two component that will use it
+    -- product-list-alt
+    -- product-detail
+   This is different from the one on the main product-list page
+ */
+  private productSelectedSubject = new BehaviorSubject<number>(0);
+  productSelectedAction$ = this.productSelectedSubject.asObservable();
+
+  selectedProduct$ = combineLatest([
+    this.ProductWithCategory$,
+    this.productSelectedAction$,
+  ]).pipe(
+    map(([products, selectedProductId]) =>
+      products.find((product) => product.id === selectedProductId)
+    ),
+    tap((product) => console.log('selectedProduct', product))
+  );
+
+  selectedProductChanged(selectedProductId: number): void {
+    this.productSelectedSubject.next(selectedProductId);
+  }
+  /*
+  END
+  This was done in the service since it is two component that will use it
+    -- product-list-alt
+    -- product-detail
+   This is different from the one on the main product-list page
+ */
 
   private fakeProduct(): Product {
     return {
