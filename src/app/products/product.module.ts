@@ -16,19 +16,19 @@ import { ProductListAltComponent } from './product-list-alt/product-list-alt.com
     RouterModule.forChild([
       {
         path: '',
-        component: ProductListComponent
+        component: ProductListComponent,
       },
       {
         path: ':alternate',
-        component: ProductShellComponent
-      }
-    ])
+        component: ProductShellComponent,
+      },
+    ]),
   ],
   declarations: [
     ProductListComponent,
     ProductShellComponent,
     ProductListAltComponent,
-    ProductDetailComponent
-  ]
+    ProductDetailComponent,
+  ],
 })
-export class ProductModule { }
+export class ProductModule {}
