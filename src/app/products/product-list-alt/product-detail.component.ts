@@ -16,6 +16,7 @@ export class ProductDetailComponent {
   private errorMessageSubject = new Subject<string>();
   errorMessage$ = this.errorMessageSubject.asObservable();
 
+  // Product to display
   product$ = this.productService.selectedProduct$.pipe(
     // tap((product) => console.log(product)),
     catchError((err) => {
@@ -24,10 +25,12 @@ export class ProductDetailComponent {
     })
   );
 
+  // Set the page title
   pageTitle$ = this.product$.pipe(
     map((p: Product) => (p ? `Product Detail for: ${p.productName}` : null))
   );
 
+  // Suppliers for this product
   productSuppliers$ = this.productService.selectedProductSuppliers$.pipe(
     catchError((err) => {
       this.errorMessageSubject.next(err);
@@ -36,6 +39,8 @@ export class ProductDetailComponent {
   );
 
   // combining all streams
+  // Create a combined stream with the data used in the view
+  // Use filter to skip if the product is null
   viewModel$ = combineLatest([
     this.pageTitle$,
     this.productSuppliers$,

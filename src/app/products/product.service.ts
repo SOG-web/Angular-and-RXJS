@@ -39,12 +39,15 @@ export class ProductService {
   private productsUrl = 'api/products';
   private suppliersUrl = this.supplierService.suppliersUrl;
 
+  // All products
   // reactive coding (Declarative and Reactive pattern for Data Retrieval)
   products$ = this.http.get<Product[]>(this.productsUrl).pipe(
     tap((data) => console.log('Products: ', JSON.stringify(data))),
     catchError(this.handleError)
   );
 
+  // Combine products with categories
+  // Map to the revised shape.
   ProductWithCategory$ = combineLatest([
     this.products$,
     this.productCategoryService.productsCategories$,
@@ -64,9 +67,11 @@ export class ProductService {
     shareReplay(1)
   );
 
+  // Action Stream
   private productInsertedSubject = new Subject<Product>();
   productInsertedAction$ = this.productInsertedSubject.asObservable();
 
+  // Merge the streams
   productWithAdd$ = merge(
     this.ProductWithCategory$,
     this.productInsertedAction$
@@ -79,9 +84,16 @@ export class ProductService {
     -- product-detail
    This is different from the one on the main product-list page
  */
+
+  // Action stream for product selection
+  // Default to 0 for no product
+  // Must have a default so the stream emits at least once.
   private productSelectedSubject = new BehaviorSubject<number>(0);
   productSelectedAction$ = this.productSelectedSubject.asObservable();
 
+  // Currently selected product
+  // Used in both List and Detail pages,
+  // so use the shareReply to share it with any component that uses it
   selectedProduct$ = combineLatest([
     this.ProductWithCategory$,
     this.productSelectedAction$,
@@ -94,6 +106,12 @@ export class ProductService {
   );
 
   /* Get it all method
+  // Suppliers for the selected product
+  // Finds suppliers from download of all suppliers
+  // Add a catchError so that the display appears
+  // even if the suppliers cannot be retrieved.
+  // Note that it must return an empty array and not EMPTY
+  // or the stream will complete.
   selectedProductSuppliers$ = combineLatest([
     this.selectedProduct$,
     this.supplierService.suppliers$,
@@ -106,6 +124,8 @@ export class ProductService {
   );*/
 
   // Just in Time method
+  // Suppliers for the selected product
+  // Only gets the suppliers it needs
   selectedProductSuppliers$ = this.selectedProduct$.pipe(
     filter((selectedProduct) => Boolean(selectedProduct)),
     switchMap((selectedProduct) =>
@@ -121,6 +141,7 @@ export class ProductService {
     )
   );
 
+  // Change the selected product
   selectedProductChanged(selectedProductId: number): void {
     this.productSelectedSubject.next(selectedProductId);
   }

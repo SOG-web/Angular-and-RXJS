@@ -17,6 +17,7 @@ export class ProductListAltComponent {
   private errorMessageSubject = new Subject<string>();
   errorMessage$ = this.errorMessageSubject.asObservable();
 
+  // Products with their categories
   products$ = this.productService.ProductWithCategory$.pipe(
     catchError((err) => {
       this.errorMessageSubject.next(err);
@@ -24,6 +25,7 @@ export class ProductListAltComponent {
     })
   );
 
+  // Selected product to highlight the entry
   // Used for the ngClass to change style. (check the template)
   selectedProduct$ = this.productService.selectedProduct$;
 

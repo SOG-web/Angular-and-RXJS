@@ -14,6 +14,7 @@ export class ProductCategoryService {
 
   constructor(private http: HttpClient) {}
 
+  // All product categories
   productsCategories$ = this.http
     .get<ProductCategory[]>(this.productCategoriesUrl)
     .pipe(
