@@ -1,8 +1,9 @@
 import { Component, ChangeDetectionStrategy } from '@angular/core';
 
 import { ProductService } from '../product.service';
-import { catchError } from 'rxjs/operators';
-import { EMPTY, Subject } from 'rxjs';
+import { catchError, tap, map, filter } from 'rxjs/operators';
+import { EMPTY, Subject, from, combineLatest } from 'rxjs';
+import { Product } from '../product';
 
 @Component({
   selector: 'pm-product-detail',
@@ -10,17 +11,42 @@ import { EMPTY, Subject } from 'rxjs';
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class ProductDetailComponent {
-  pageTitle = 'Product Detail';
-
   constructor(private productService: ProductService) {}
 
   private errorMessageSubject = new Subject<string>();
   errorMessage$ = this.errorMessageSubject.asObservable();
 
   product$ = this.productService.selectedProduct$.pipe(
+    // tap((product) => console.log(product)),
     catchError((err) => {
       this.errorMessageSubject.next(err);
       return EMPTY;
     })
+  );
+
+  pageTitle$ = this.product$.pipe(
+    map((p: Product) => (p ? `Product Detail for: ${p.productName}` : null))
+  );
+
+  productSuppliers$ = this.productService.selectedProductSuppliers$.pipe(
+    catchError((err) => {
+      this.errorMessageSubject.next(err);
+      return EMPTY;
+    })
+  );
+
+  // combining all streams
+  viewModel$ = combineLatest([
+    this.pageTitle$,
+    this.productSuppliers$,
+    this.pageTitle$,
+  ]).pipe(
+    // the filter to boolean is to escape undefine on the component first load
+    filter(([product]) => Boolean(product)),
+    map(([product, productSupplier, pageTitle]) => ({
+      product,
+      productSupplier,
+      pageTitle,
+    }))
   );
 }

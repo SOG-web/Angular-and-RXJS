@@ -1,8 +1,8 @@
 import { HttpClient } from '@angular/common/http';
 import { Injectable } from '@angular/core';
 
-import { throwError, Observable } from 'rxjs';
-import { catchError, tap, map } from 'rxjs/operators';
+import { throwError } from 'rxjs';
+import { catchError, tap, shareReplay } from 'rxjs/operators';
 
 import { ProductCategory } from './product-category';
 
@@ -17,13 +17,13 @@ export class ProductCategoryService {
   productsCategories$ = this.http
     .get<ProductCategory[]>(this.productCategoriesUrl)
     .pipe(
-      tap(
-        (data) => console.log('category', JSON.stringify(data)),
-        catchError(this.handleError)
-      )
+      tap((data) => console.log('category', JSON.stringify(data))),
+      shareReplay(1),
+      catchError(this.handleError)
     );
 
-  private handleError(err: any): Observable<never> {
+  // tslint:disable-next-line: typedef
+  private handleError(err: any) {
     // in a real world app, we may send the server to some remote logging infrastructure
     // instead of just logging it to the console
     let errorMessage: string;

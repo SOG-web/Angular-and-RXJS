@@ -1,8 +1,26 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 
-import { Observable, throwError, combineLatest, BehaviorSubject } from 'rxjs';
-import { catchError, tap, map } from 'rxjs/operators';
+import {
+  Observable,
+  throwError,
+  combineLatest,
+  BehaviorSubject,
+  Subject,
+  merge,
+  from,
+} from 'rxjs';
+import {
+  catchError,
+  tap,
+  map,
+  scan,
+  shareReplay,
+  mergeMap,
+  toArray,
+  filter,
+  switchMap,
+} from 'rxjs/operators';
 
 import { Product } from './product';
 import { Supplier } from '../suppliers/supplier';
@@ -13,14 +31,13 @@ import { ProductCategoryService } from '../product-categories/product-category.s
   providedIn: 'root',
 })
 export class ProductService {
-  private productsUrl = 'api/products';
-  private suppliersUrl = this.supplierService.suppliersUrl;
-
   constructor(
     private http: HttpClient,
     private supplierService: SupplierService,
     private productCategoryService: ProductCategoryService
   ) {}
+  private productsUrl = 'api/products';
+  private suppliersUrl = this.supplierService.suppliersUrl;
 
   // reactive coding (Declarative and Reactive pattern for Data Retrieval)
   products$ = this.http.get<Product[]>(this.productsUrl).pipe(
@@ -43,8 +60,17 @@ export class ProductService {
             searchKey: [product.productName],
           } as Product)
       )
-    )
+    ),
+    shareReplay(1)
   );
+
+  private productInsertedSubject = new Subject<Product>();
+  productInsertedAction$ = this.productInsertedSubject.asObservable();
+
+  productWithAdd$ = merge(
+    this.ProductWithCategory$,
+    this.productInsertedAction$
+  ).pipe(scan((acc: Product[], value: Product) => [...acc, value]));
 
   /*
   START
@@ -63,7 +89,36 @@ export class ProductService {
     map(([products, selectedProductId]) =>
       products.find((product) => product.id === selectedProductId)
     ),
-    tap((product) => console.log('selectedProduct', product))
+    // tap((product) => console.log('selectedProduct', product)),
+    shareReplay(1)
+  );
+
+  /* Get it all method
+  selectedProductSuppliers$ = combineLatest([
+    this.selectedProduct$,
+    this.supplierService.suppliers$,
+  ]).pipe(
+    map(([selectedProduct, suppliers]) =>
+      suppliers.filter((supplier) =>
+        selectedProduct.supplierIds.includes(supplier.id)
+      )
+    )
+  );*/
+
+  // Just in Time method
+  selectedProductSuppliers$ = this.selectedProduct$.pipe(
+    filter((selectedProduct) => Boolean(selectedProduct)),
+    switchMap((selectedProduct) =>
+      from(selectedProduct.supplierIds).pipe(
+        mergeMap((supplierId) =>
+          this.http.get<Supplier>(`${this.suppliersUrl}/${supplierId}`)
+        ),
+        tap((suppliers) =>
+          console.log('product supplier', JSON.stringify(suppliers))
+        ),
+        toArray()
+      )
+    )
   );
 
   selectedProductChanged(selectedProductId: number): void {
@@ -76,6 +131,11 @@ export class ProductService {
     -- product-detail
    This is different from the one on the main product-list page
  */
+
+  addProduct(newProduct?: Product): void {
+    newProduct = newProduct || this.fakeProduct();
+    this.productInsertedSubject.next(newProduct);
+  }
 
   private fakeProduct(): Product {
     return {

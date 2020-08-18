@@ -1,6 +1,6 @@
 import { Component } from '@angular/core';
 
-import { EMPTY, Subject, combineLatest, BehaviorSubject } from 'rxjs';
+import { EMPTY, Subject, combineLatest } from 'rxjs';
 
 import { ProductService } from './product.service';
 import { catchError, map, startWith } from 'rxjs/operators';
@@ -21,9 +21,11 @@ export class ProductListComponent {
   pageTitle = 'Product List';
   errorMessage = '';
 
-  private categorySelectedSubject = new BehaviorSubject<number>(0);
+  // Action stream
+  private categorySelectedSubject = new Subject<number>();
   categorySelectedAction$ = this.categorySelectedSubject.asObservable();
 
+  // Categories for drop down list
   categories$ = this.productCategoryService.productsCategories$.pipe(
     catchError((err) => {
       this.errorMessage = err;
@@ -31,9 +33,12 @@ export class ProductListComponent {
     })
   );
 
+  // Merge Data stream with Action stream
+  // To filter to the selected category
   products$ = combineLatest([
-    this.productService.ProductWithCategory$,
-    this.categorySelectedAction$,
+    // since product with add has merge both the ProductWithCategory$ and the rest so we will have access to the category name
+    this.productService.productWithAdd$,
+    this.categorySelectedAction$.pipe(startWith(0)),
   ]).pipe(
     map(([products, selectedCategoryId]) =>
       products.filter((product) =>
@@ -46,8 +51,14 @@ export class ProductListComponent {
     })
   );
 
+  // Combine all streams for the view
+  viewModel$ = combineLatest([this.products$, this.categories$]).pipe(
+    map(([products, categories]) => ({ products, categories }))
+  );
+
   onAdd(): void {
-    console.log('Not yet implemented');
+    // instead of empty in a real word app it can be the form value
+    this.productService.addProduct();
   }
 
   onSelected(categoryId: string): void {

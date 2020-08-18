@@ -3,7 +3,7 @@
     {{ pageTitle }}
   </div>
 
-  <div class="card-body">
+  <div class="card-body" *ngIf="viewModel$ | async as vm">
     <div class="container">
       <div class="row justify-content-between">
         <div class="col-3">
@@ -13,7 +13,7 @@
           >
             <option value="0">- Display All -</option>
             <option
-              *ngFor="let category of categories$ | async"
+              *ngFor="let category of vm.categories"
               [value]="category.id"
               >{{ category.name }}</option
             >
@@ -32,7 +32,7 @@
     </div>
 
     <div class="table-responsive">
-      <table class="table mb-0" *ngIf="products$ | async as products">
+      <table class="table mb-0" *ngIf="vm.products">
         <thead>
           <tr>
             <th>Product</th>
@@ -42,7 +42,7 @@
             <th>In Stock</th>
           </tr>
         </thead>
-        <tbody *ngFor="let product of products">
+        <tbody *ngFor="let product of vm.products">
           <tr>
             <td>{{ product.productName }}</td>
             <td>{{ product.productCode }}</td>
